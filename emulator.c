@@ -20,6 +20,7 @@
 #include "platforms/amiga/pistorm-dev/pistorm-dev.h"
 #include "platforms/amiga/pistorm-dev/pistorm-dev-enums.h"
 #include "gpio/ps_protocol.h"
+#include "a314/a314.h"
 
 #include <assert.h>
 #include <dirent.h>
@@ -117,6 +118,7 @@ unsigned int loop_cycles = 300, irq_status = 0;
 struct emulator_config *cfg = NULL;
 char keyboard_file[256] = "/dev/input/event1";
 
+extern uint8_t a314_emulation_enabled;
 uint64_t trig_irq = 0, serv_irq = 0;
 uint16_t irq_delay = 0;
 unsigned int amiga_reset=0, amiga_reset_last=0;
@@ -296,6 +298,9 @@ cpu_loop:
 			m68k_execute_bef(state, loop_cycles);
     }
   }
+
+  if (a314_emulation_enabled)
+    a314_process_events();
 
   if (irq) {
     last_irq = ((ps_read_status_reg() & 0xe000) >> 13);

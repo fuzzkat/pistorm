@@ -1336,13 +1336,18 @@ void a314_set_mem_base_size(unsigned int base, unsigned int size)
     ca.mem_size = htobe32(size);
 }
 
+// Called from the CPU loop. Raises a PORTS (level 2) interrupt on the
+// Amiga when events become pending, so a314.device's interrupt server
+// runs straight away instead of waiting for some other level 2 interrupt.
+// The real IPL lines then deliver it like any other chipset interrupt.
 void a314_process_events()
 {
-    if (ca.a_events & ca.a_enable)
-    {
+    static bool raised = false;
+    bool pending = (ca.a_events & ca.a_enable) != 0;
+
+    if (pending && !raised)
         ps_write_16(0xdff09c, 0x8008);
-        m68k_set_irq(2);
-    }
+    raised = pending;
 }
 
 unsigned int a314_read_memory_8(unsigned int address)
