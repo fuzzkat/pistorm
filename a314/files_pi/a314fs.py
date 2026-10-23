@@ -362,6 +362,14 @@ def mtime_to_dmt(mtime):
     days = max(0, days) # If days are before Amiga epoc
     return (days, mins, ticks)
 
+def to_bstr(s, max_len):
+    # Encode first, then take the length: characters outside Latin-1 are
+    # dropped, and a length byte counted before that would misalign the
+    # reply (the Amiga handler copies BSTRs into the FileInfoBlock without
+    # bounds checks, so a wrong length overruns it).
+    b = s.encode('latin-1', 'ignore')[:max_len]
+    return bytes([len(b)]) + b
+
 def process_examine_object(key):
     logger.debug('ACTION_EXAMINE_OBJECT, key: %s', key)
     ol = locks[key]
@@ -385,8 +393,8 @@ def process_examine_object(key):
         ol.entry_it = os.scandir(path)
 
     size = min(size, 2 ** 31 - 1)
-    fn = (chr(len(fn)) + fn).encode('latin-1', 'ignore')
-    comment = (chr(len(comment)) + comment).encode('latin-1', 'ignore')
+    fn = to_bstr(fn, 107)
+    comment = to_bstr(comment, 79)
     return struct.pack('>HHHhIIIII', 1, 0, 666, type_, size, protection, days, mins, ticks) + fn + comment
 
 def process_examine_next(key, disk_key):
@@ -424,8 +432,8 @@ def process_examine_next(key, disk_key):
         type_ = ST_USERDIR
 
     size = min(size, 2 ** 31 - 1)
-    fn = (chr(len(fn)) + fn).encode('latin-1', 'ignore')
-    comment = (chr(len(comment)) + comment).encode('latin-1', 'ignore')
+    fn = to_bstr(fn, 107)
+    comment = to_bstr(comment, 79)
     return struct.pack('>HHHhIIIII', 1, 0, disk_key, type_, size, protection, days, mins, ticks) + fn + comment
 
 def process_examine_fh(arg1):
@@ -444,8 +452,8 @@ def process_examine_fh(arg1):
         type_ = ST_USERDIR
 
     size = min(size, 2 ** 31 - 1)
-    fn = (chr(len(fn)) + fn).encode('latin-1', 'ignore')
-    comment = (chr(len(comment)) + comment).encode('latin-1', 'ignore')
+    fn = to_bstr(fn, 107)
+    comment = to_bstr(comment, 79)
     return struct.pack('>HHHhIIIII', 1, 0, 666, type_, size, protection, days, mins, ticks) + fn + comment
 
 
